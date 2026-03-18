@@ -42,6 +42,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.tableorder-customer.rule=Host(`eveningsip.frozentea.org`)"
+      - "traefik.http.routers.tableorder-customer.priority=1"
       - "traefik.http.services.tableorder-customer.loadbalancer.server.port=80"
       - "traefik.http.routers.tableorder-customer.tls=true"
       - "traefik.http.routers.tableorder-customer.entrypoints=websecure"
@@ -59,6 +60,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.tableorder-admin.rule=Host(`eveningsip.frozentea.org`) && PathPrefix(`/admin`)"
+      - "traefik.http.routers.tableorder-admin.priority=10"
       - "traefik.http.services.tableorder-admin.loadbalancer.server.port=80"
       - "traefik.http.routers.tableorder-admin.tls=true"
       - "traefik.http.routers.tableorder-admin.entrypoints=websecure"
