@@ -1,0 +1,63 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: tableorder
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - table-order-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/tableorder
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRE_HOURS: 16
+      CORS_ORIGINS: http://localhost:3000,http://localhost:3001
+    volumes:
+      - backend_uploads:/app/static/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - table-order-network
+
+  customer-frontend:
+    build:
+      context: ./customer-frontend
+      args:
+        VITE_API_URL: http://localhost:8000
+    ports:
+      - "3000:80"
+    networks:
+      - table-order-network
+    restart: unless-stopped
+
+  admin-frontend:
+    build:
+      context: ./admin-frontend
+      args:
+        VITE_API_URL: http://localhost:8000
+    ports:
+      - "3001:80"
+    networks:
+      - table-order-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  backend_uploads:
+
+networks:
+  table-order-network:
+    driver: bridge
