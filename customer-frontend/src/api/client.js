@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_URL || '/order/api'
+const BASE_URL = import.meta.env.VITE_API_URL || ''
 
 const request = async (path, options = {}, token = null) => {
   const headers = { 'Content-Type': 'application/json', ...options.headers }
