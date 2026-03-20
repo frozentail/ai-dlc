@@ -73,4 +73,8 @@ async def delete_order_item(
     db: AsyncSession = Depends(get_db),
     admin: dict = Depends(get_current_admin),
 ):
-    return await order_service.delete_order_item(db, admin["store_id"], order_id, item_id)
+    from app.schemas.order import OrderResponse as OR
+    result = await order_service.delete_order_item(db, admin["store_id"], order_id, item_id)
+    if isinstance(result, dict):
+        return result  # {"order_deleted": True}
+    return OR.model_validate(result)
