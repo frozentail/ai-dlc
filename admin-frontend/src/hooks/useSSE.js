@@ -20,8 +20,8 @@ export function useSSE(token) {
       setLastEvent({ type: 'new_order', data: JSON.parse(e.data) })
     })
 
-    es.addEventListener('order_status_updated', (e) => {
-      setLastEvent({ type: 'order_status_updated', data: JSON.parse(e.data) })
+    es.addEventListener('order_status_changed', (e) => {
+      setLastEvent({ type: 'order_status_changed', data: JSON.parse(e.data) })
     })
 
     return () => {

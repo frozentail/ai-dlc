@@ -1,7 +1,7 @@
 const STATUS_LABEL = { pending: '대기중', preparing: '준비중', completed: '완료' }
 const STATUS_COLOR = { pending: '#f59e0b', preparing: '#3b82f6', completed: '#10b981' }
 
-export default function TableCard({ tableNumber, orders, isNew, onOrderClick }) {
+export default function TableCard({ tableNumber, orders, isNew, onOrderClick, onMoreClick }) {
   const totalAmount = orders.reduce((s, o) => s + o.total_amount, 0)
   const latestOrders = [...orders].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 2)
 
@@ -29,7 +29,7 @@ export default function TableCard({ tableNumber, orders, isNew, onOrderClick }) 
             </div>
           ))}
           {orders.length > 2 && (
-            <div style={styles.moreOrders}>+{orders.length - 2}개 더보기</div>
+            <div style={styles.moreOrders} onClick={onMoreClick}>+{orders.length - 2}개 더보기</div>
           )}
         </div>
       )}
@@ -49,5 +49,5 @@ const styles = {
   orderRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', padding: '4px 0', borderBottom: '1px solid #f5f5f5' },
   orderItems: { fontSize: 13, color: '#444', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
   statusDot: { fontSize: 11, color: '#fff', padding: '2px 8px', borderRadius: 10, marginLeft: 8, flexShrink: 0 },
-  moreOrders: { fontSize: 12, color: '#999', textAlign: 'center', paddingTop: 4 },
+  moreOrders: { fontSize: 12, color: '#3b82f6', textAlign: 'center', paddingTop: 4, cursor: 'pointer', textDecoration: 'underline' },
 }

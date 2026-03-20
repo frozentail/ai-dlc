@@ -5,12 +5,14 @@ import { api } from '../api/client'
 import NavBar from '../components/NavBar'
 import TableCard from '../components/TableCard'
 import OrderDetailModal from '../components/OrderDetailModal'
+import TableOrdersModal from '../components/TableOrdersModal'
 
 export default function DashboardPage() {
   const { token } = useAuth()
   const [orders, setOrders] = useState([])
   const [tables, setTables] = useState([])
   const [selectedOrder, setSelectedOrder] = useState(null)
+  const [historyTable, setHistoryTable] = useState(null) // 더보기 클릭한 테이블
   const [newTableIds, setNewTableIds] = useState(new Set())
   const { lastEvent } = useSSE(token)
   const highlightTimers = useRef({})
@@ -34,23 +36,53 @@ export default function DashboardPage() {
   // SSE 이벤트 처리
   useEffect(() => {
     if (!lastEvent) return
+
     if (lastEvent.type === 'new_order') {
-      const order = lastEvent.data
-      setOrders(prev => [order, ...prev])
+      const { order_id, table_id, total_amount, items } = lastEvent.data
+      // API로 주문 상세 재조회 (items 포함)
+      api.get(`/orders/${order_id}`, token)
+        .then(order => {
+          setOrders(prev => {
+            // 중복 방지
+            if (prev.find(o => o.id === order.id)) return prev
+            return [order, ...prev]
+          })
+        })
+        .catch(() => {
+          // fallback: payload 데이터로 임시 추가
+          const tempOrder = {
+            id: order_id,
+            table_id,
+            total_amount,
+            status: 'pending',
+            items: items || [],
+            created_at: new Date().toISOString(),
+          }
+          setOrders(prev => {
+            if (prev.find(o => o.id === order_id)) return prev
+            return [tempOrder, ...prev]
+          })
+        })
+
       // 해당 테이블 하이라이트 3초
-      const tid = order.table_id
-      setNewTableIds(prev => new Set([...prev, tid]))
-      if (highlightTimers.current[tid]) clearTimeout(highlightTimers.current[tid])
-      highlightTimers.current[tid] = setTimeout(() => {
-        setNewTableIds(prev => { const s = new Set(prev); s.delete(tid); return s })
+      setNewTableIds(prev => new Set([...prev, table_id]))
+      if (highlightTimers.current[table_id]) clearTimeout(highlightTimers.current[table_id])
+      highlightTimers.current[table_id] = setTimeout(() => {
+        setNewTableIds(prev => { const s = new Set(prev); s.delete(table_id); return s })
       }, 3000)
     }
-    if (lastEvent.type === 'order_status_updated') {
+
+    if (lastEvent.type === 'order_status_changed') {
       const { order_id, status } = lastEvent.data
       setOrders(prev => prev.map(o => o.id === order_id ? { ...o, status } : o))
       if (selectedOrder?.id === order_id) {
         setSelectedOrder(prev => prev ? { ...prev, status } : null)
       }
+    }
+
+    if (lastEvent.type === 'order_deleted') {
+      const { order_id } = lastEvent.data
+      setOrders(prev => prev.filter(o => o.id !== order_id))
     }
   }, [lastEvent])
 
@@ -68,6 +100,11 @@ export default function DashboardPage() {
 
   const handleDelete = (orderId) => {
     setOrders(prev => prev.filter(o => o.id !== orderId))
+    setSelectedOrder(null)
+  }
+
+  const handleMoreClick = (table) => {
+    setHistoryTable(table)
   }
 
   return (
@@ -86,6 +123,7 @@ export default function DashboardPage() {
                 orders={ordersByTable[table.id] || []}
                 isNew={newTableIds.has(table.id)}
                 onOrderClick={setSelectedOrder}
+                onMoreClick={() => handleMoreClick({ ...table, orders: ordersByTable[table.id] || [] })}
               />
             ))}
           </div>
@@ -97,6 +135,17 @@ export default function DashboardPage() {
         onStatusChange={handleStatusChange}
         onDelete={handleDelete}
       />
+      {historyTable && (
+        <TableOrdersModal
+          tableNumber={historyTable.table_number}
+          orders={historyTable.orders}
+          onClose={() => setHistoryTable(null)}
+          onOrderClick={(order) => {
+            setHistoryTable(null)
+            setSelectedOrder(order)
+          }}
+        />
+      )}
     </div>
   )
 }

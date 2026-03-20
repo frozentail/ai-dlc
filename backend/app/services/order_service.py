@@ -82,6 +82,20 @@ async def get_session_orders(db: AsyncSession, session_id: str) -> list[Order]:
     return list(result.scalars().all())
 
 
+async def get_order(db: AsyncSession, store_id: str, order_id: str) -> Order:
+    from app.models.table import Table
+    result = await db.execute(
+        select(Order).options(selectinload(Order.items)).where(Order.id == order_id)
+    )
+    order = result.scalar_one_or_none()
+    if not order:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="주문을 찾을 수 없습니다")
+    result = await db.execute(select(Table).where(Table.id == order.table_id, Table.store_id == store_id))
+    if not result.scalar_one_or_none():
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="권한이 없습니다")
+    return order
+
+
 async def get_all_orders(db: AsyncSession, store_id: str, table_id: str | None = None) -> list[Order]:
     from app.models.table import Table
     result = await db.execute(select(Table).where(Table.store_id == store_id))

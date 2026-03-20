@@ -37,6 +37,15 @@ async def get_all_orders(
     return await order_service.get_all_orders(db, admin["store_id"], table_id)
 
 
+@router.get("/{order_id}", response_model=OrderResponse)
+async def get_order(
+    order_id: str,
+    db: AsyncSession = Depends(get_db),
+    admin: dict = Depends(get_current_admin),
+):
+    return await order_service.get_order(db, admin["store_id"], order_id)
+
+
 @router.put("/{order_id}/status", response_model=OrderResponse)
 async def update_order_status(
     order_id: str,
