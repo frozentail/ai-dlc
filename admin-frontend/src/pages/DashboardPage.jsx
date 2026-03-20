@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { useSSE } from '../hooks/useSSE'
 import { api } from '../api/client'
 import NavBar from '../components/NavBar'
 import TableCard from '../components/TableCard'
@@ -13,33 +14,9 @@ export default function DashboardPage() {
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [historyTable, setHistoryTable] = useState(null)
   const [newTableIds, setNewTableIds] = useState(new Set())
-  const prevOrderIdsRef = useRef(new Set())
+  const { lastEvent, isConnected } = useSSE(token)
   const highlightTimers = useRef({})
 
-  const fetchOrders = async () => {
-    try {
-      const ordersData = await api.get('/orders', token)
-      setOrders(prev => {
-        // 새 주문 감지해서 테이블 하이라이트
-        const newIds = ordersData.map(o => o.id)
-        const added = ordersData.filter(o => !prevOrderIdsRef.current.has(o.id))
-        added.forEach(order => {
-          const tid = order.table_id
-          setNewTableIds(s => new Set([...s, tid]))
-          if (highlightTimers.current[tid]) clearTimeout(highlightTimers.current[tid])
-          highlightTimers.current[tid] = setTimeout(() => {
-            setNewTableIds(s => { const ns = new Set(s); ns.delete(tid); return ns })
-          }, 3000)
-        })
-        prevOrderIdsRef.current = new Set(newIds)
-        return ordersData
-      })
-    } catch (e) {
-      console.error(e)
-    }
-  }
-
-  // 초기 로드
   useEffect(() => {
     const load = async () => {
       try {
@@ -47,7 +24,6 @@ export default function DashboardPage() {
           api.get('/orders', token),
           api.get('/tables', token),
         ])
-        prevOrderIdsRef.current = new Set(ordersData.map(o => o.id))
         setOrders(ordersData)
         setTables(tablesData)
       } catch (e) {
@@ -57,14 +33,42 @@ export default function DashboardPage() {
     load()
   }, [token])
 
-  // 2초 polling
+  // SSE 이벤트 처리
   useEffect(() => {
-    if (!token) return
-    const interval = setInterval(fetchOrders, 2000)
-    return () => clearInterval(interval)
-  }, [token])
+    if (!lastEvent) return
 
-  // 테이블별 주문 그룹핑
+    if (lastEvent.type === 'new_order') {
+      const { order_id, table_id } = lastEvent.data
+      api.get(`/orders/${order_id}`, token)
+        .then(order => {
+          setOrders(prev => prev.find(o => o.id === order.id) ? prev : [order, ...prev])
+          const tid = table_id
+          setNewTableIds(prev => new Set([...prev, tid]))
+          if (highlightTimers.current[tid]) clearTimeout(highlightTimers.current[tid])
+          highlightTimers.current[tid] = setTimeout(() => {
+            setNewTableIds(prev => { const s = new Set(prev); s.delete(tid); return s })
+          }, 3000)
+        })
+        .catch(console.error)
+    }
+
+    if (lastEvent.type === 'order_status_changed') {
+      const { order_id, status } = lastEvent.data
+      setOrders(prev => prev.map(o => o.id === order_id ? { ...o, status } : o))
+      setSelectedOrder(prev => prev?.id === order_id ? { ...prev, status } : prev)
+    }
+
+    if (lastEvent.type === 'order_deleted') {
+      const { order_id } = lastEvent.data
+      setOrders(prev => prev.filter(o => o.id !== order_id))
+    }
+
+    if (lastEvent.type === 'session_completed') {
+      const { table_id } = lastEvent.data
+      setOrders(prev => prev.filter(o => o.table_id !== table_id))
+    }
+  }, [lastEvent])
+
   const ordersByTable = orders.reduce((acc, o) => {
     if (!acc[o.table_id]) acc[o.table_id] = []
     acc[o.table_id].push(o)
@@ -85,7 +89,12 @@ export default function DashboardPage() {
     <div style={styles.page}>
       <NavBar />
       <div style={styles.content}>
-        <h2 style={styles.heading}>주문 대시보드</h2>
+        <div style={styles.titleRow}>
+          <h2 style={styles.heading}>주문 대시보드</h2>
+          <span style={{ ...styles.sseStatus, color: isConnected ? '#10b981' : '#f59e0b' }}>
+            {isConnected ? '● 실시간 연결됨' : '● 연결 중...'}
+          </span>
+        </div>
         {tables.length === 0 ? (
           <div style={styles.empty}>등록된 테이블이 없습니다</div>
         ) : (
@@ -131,7 +140,9 @@ export default function DashboardPage() {
 const styles = {
   page: { minHeight: '100vh', background: '#f0f2f5' },
   content: { padding: 24, maxWidth: 1200, margin: '0 auto' },
-  heading: { margin: '0 0 20px', fontSize: 20, fontWeight: 700 },
+  titleRow: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 },
+  heading: { margin: 0, fontSize: 20, fontWeight: 700 },
+  sseStatus: { fontSize: 12 },
   empty: { padding: 60, textAlign: 'center', color: '#999' },
   grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 },
 }
