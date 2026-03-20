@@ -8,6 +8,8 @@ from app.models.base import generate_uuid
 from app.schemas.order import OrderCreate, OrderStatusUpdate
 from app.services.sse_service import sse_service
 
+from sqlalchemy.orm import selectinload
+
 STATUS_TRANSITIONS = {
     OrderStatus.PENDING: OrderStatus.PREPARING,
     OrderStatus.PREPARING: OrderStatus.COMPLETED,
@@ -55,7 +57,12 @@ async def create_order(db: AsyncSession, table_id: str, session_id: str, store_i
         session.total_amount += total
 
     await db.commit()
-    await db.refresh(order)
+
+    # items eager load
+    result = await db.execute(
+        select(Order).options(selectinload(Order.items)).where(Order.id == order.id)
+    )
+    order = result.scalar_one()
 
     # SSE 이벤트 발행
     await sse_service.broadcast_to_admin(store_id, "new_order", {
@@ -70,19 +77,18 @@ async def create_order(db: AsyncSession, table_id: str, session_id: str, store_i
 
 async def get_session_orders(db: AsyncSession, session_id: str) -> list[Order]:
     result = await db.execute(
-        select(Order).where(Order.session_id == session_id).order_by(Order.created_at)
+        select(Order).options(selectinload(Order.items)).where(Order.session_id == session_id).order_by(Order.created_at)
     )
     return list(result.scalars().all())
 
 
 async def get_all_orders(db: AsyncSession, store_id: str, table_id: str | None = None) -> list[Order]:
     from app.models.table import Table
-    # store 소속 table_id 목록 조회
     result = await db.execute(select(Table).where(Table.store_id == store_id))
     tables = result.scalars().all()
     table_ids = [t.id for t in tables]
 
-    query = select(Order).where(Order.table_id.in_(table_ids))
+    query = select(Order).options(selectinload(Order.items)).where(Order.table_id.in_(table_ids))
     if table_id:
         query = query.where(Order.table_id == table_id)
     query = query.order_by(Order.created_at.desc())
@@ -109,7 +115,11 @@ async def update_order_status(db: AsyncSession, store_id: str, order_id: str, da
 
     order.status = data.status
     await db.commit()
-    await db.refresh(order)
+
+    result = await db.execute(
+        select(Order).options(selectinload(Order.items)).where(Order.id == order.id)
+    )
+    order = result.scalar_one()
 
     # SSE 이벤트 발행
     await sse_service.broadcast_to_admin(store_id, "order_status_changed", {
