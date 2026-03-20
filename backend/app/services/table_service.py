@@ -53,7 +53,7 @@ async def complete_session(db: AsyncSession, store_id: str, table_id: str):
 
     session = await get_active_session(db, table_id)
     if not session:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="활성 세션이 없습니다")
+        return {"success": True}  # 이미 완료된 상태면 그냥 성공 처리
 
     session.ended_at = datetime.now(timezone.utc).replace(tzinfo=None)
     session.total_amount = 0
