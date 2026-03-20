@@ -123,4 +123,4 @@ async def login_table(db: AsyncSession, store_identifier: str, table_number: int
         await db.refresh(session)
 
     token = create_token({"role": "table", "table_id": table.id, "session_id": session.id, "store_id": store.id})
-    return {"access_token": token, "session_id": session.id, "table_number": table.table_number}
+    return {"access_token": token, "session_id": session.id, "table_number": table.table_number, "store_id": store.id, "table_id": table.id}

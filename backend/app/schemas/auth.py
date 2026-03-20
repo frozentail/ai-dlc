@@ -37,3 +37,5 @@ class TableTokenResponse(BaseModel):
     token_type: str = "bearer"
     session_id: str
     table_number: int
+    store_id: str
+    table_id: str
