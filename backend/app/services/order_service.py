@@ -97,12 +97,19 @@ async def get_order(db: AsyncSession, store_id: str, order_id: str) -> Order:
 
 
 async def get_all_orders(db: AsyncSession, store_id: str, table_id: str | None = None) -> list[Order]:
-    from app.models.table import Table
+    from app.models.table import Table, TableSession as TS
     result = await db.execute(select(Table).where(Table.store_id == store_id))
     tables = result.scalars().all()
     table_ids = [t.id for t in tables]
 
-    query = select(Order).options(selectinload(Order.items)).where(Order.table_id.in_(table_ids))
+    # 활성 세션(ended_at IS NULL)의 주문만 조회
+    query = (
+        select(Order)
+        .options(selectinload(Order.items))
+        .join(TS, Order.session_id == TS.id)
+        .where(Order.table_id.in_(table_ids))
+        .where(TS.ended_at.is_(None))
+    )
     if table_id:
         query = query.where(Order.table_id == table_id)
     query = query.order_by(Order.created_at.desc())
