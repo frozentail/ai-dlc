@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { useSSE } from '../hooks/useSSE'
 import { api } from '../api/client'
 import NavBar from '../components/NavBar'
 import TableCard from '../components/TableCard'
@@ -12,11 +11,35 @@ export default function DashboardPage() {
   const [orders, setOrders] = useState([])
   const [tables, setTables] = useState([])
   const [selectedOrder, setSelectedOrder] = useState(null)
-  const [historyTable, setHistoryTable] = useState(null) // 더보기 클릭한 테이블
+  const [historyTable, setHistoryTable] = useState(null)
   const [newTableIds, setNewTableIds] = useState(new Set())
-  const { lastEvent } = useSSE(token)
+  const prevOrderIdsRef = useRef(new Set())
   const highlightTimers = useRef({})
 
+  const fetchOrders = async () => {
+    try {
+      const ordersData = await api.get('/orders', token)
+      setOrders(prev => {
+        // 새 주문 감지해서 테이블 하이라이트
+        const newIds = ordersData.map(o => o.id)
+        const added = ordersData.filter(o => !prevOrderIdsRef.current.has(o.id))
+        added.forEach(order => {
+          const tid = order.table_id
+          setNewTableIds(s => new Set([...s, tid]))
+          if (highlightTimers.current[tid]) clearTimeout(highlightTimers.current[tid])
+          highlightTimers.current[tid] = setTimeout(() => {
+            setNewTableIds(s => { const ns = new Set(s); ns.delete(tid); return ns })
+          }, 3000)
+        })
+        prevOrderIdsRef.current = new Set(newIds)
+        return ordersData
+      })
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  // 초기 로드
   useEffect(() => {
     const load = async () => {
       try {
@@ -24,6 +47,7 @@ export default function DashboardPage() {
           api.get('/orders', token),
           api.get('/tables', token),
         ])
+        prevOrderIdsRef.current = new Set(ordersData.map(o => o.id))
         setOrders(ordersData)
         setTables(tablesData)
       } catch (e) {
@@ -33,58 +57,12 @@ export default function DashboardPage() {
     load()
   }, [token])
 
-  // SSE 이벤트 처리
+  // 2초 polling
   useEffect(() => {
-    if (!lastEvent) return
-
-    if (lastEvent.type === 'new_order') {
-      const { order_id, table_id, total_amount, items } = lastEvent.data
-      // API로 주문 상세 재조회 (items 포함)
-      api.get(`/orders/${order_id}`, token)
-        .then(order => {
-          setOrders(prev => {
-            // 중복 방지
-            if (prev.find(o => o.id === order.id)) return prev
-            return [order, ...prev]
-          })
-        })
-        .catch(() => {
-          // fallback: payload 데이터로 임시 추가
-          const tempOrder = {
-            id: order_id,
-            table_id,
-            total_amount,
-            status: 'pending',
-            items: items || [],
-            created_at: new Date().toISOString(),
-          }
-          setOrders(prev => {
-            if (prev.find(o => o.id === order_id)) return prev
-            return [tempOrder, ...prev]
-          })
-        })
-
-      // 해당 테이블 하이라이트 3초
-      setNewTableIds(prev => new Set([...prev, table_id]))
-      if (highlightTimers.current[table_id]) clearTimeout(highlightTimers.current[table_id])
-      highlightTimers.current[table_id] = setTimeout(() => {
-        setNewTableIds(prev => { const s = new Set(prev); s.delete(table_id); return s })
-      }, 3000)
-    }
-
-    if (lastEvent.type === 'order_status_changed') {
-      const { order_id, status } = lastEvent.data
-      setOrders(prev => prev.map(o => o.id === order_id ? { ...o, status } : o))
-      if (selectedOrder?.id === order_id) {
-        setSelectedOrder(prev => prev ? { ...prev, status } : null)
-      }
-    }
-
-    if (lastEvent.type === 'order_deleted') {
-      const { order_id } = lastEvent.data
-      setOrders(prev => prev.filter(o => o.id !== order_id))
-    }
-  }, [lastEvent])
+    if (!token) return
+    const interval = setInterval(fetchOrders, 2000)
+    return () => clearInterval(interval)
+  }, [token])
 
   // 테이블별 주문 그룹핑
   const ordersByTable = orders.reduce((acc, o) => {
@@ -103,10 +81,6 @@ export default function DashboardPage() {
     setSelectedOrder(null)
   }
 
-  const handleMoreClick = (table) => {
-    setHistoryTable(table)
-  }
-
   return (
     <div style={styles.page}>
       <NavBar />
@@ -123,7 +97,7 @@ export default function DashboardPage() {
                 orders={ordersByTable[table.id] || []}
                 isNew={newTableIds.has(table.id)}
                 onOrderClick={setSelectedOrder}
-                onMoreClick={() => handleMoreClick({ ...table, orders: ordersByTable[table.id] || [] })}
+                onMoreClick={() => setHistoryTable({ ...table, orders: ordersByTable[table.id] || [] })}
               />
             ))}
           </div>
