@@ -45,7 +45,9 @@ class SSEService:
     # ── SSE 포맷 변환 ─────────────────────────────────────────────
     @staticmethod
     def format_sse(data: dict) -> str:
-        return f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+        event_type = data.get("type", "message")
+        payload = json.dumps(data.get("data", {}), ensure_ascii=False)
+        return f"event: {event_type}\ndata: {payload}\n\n"
 
 
 sse_service = SSEService()
