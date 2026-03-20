@@ -44,6 +44,7 @@ services:
       - "traefik.http.routers.tableorder-customer.entrypoints=websecure"
       - "traefik.http.routers.tableorder-customer.tls.certresolver=cloudflare"
       - "traefik.http.middlewares.tableorder-sse.headers.customresponseheaders.X-Accel-Buffering=no"
+      - "traefik.http.services.tableorder-customer.loadbalancer.responseforwarding.flushinterval=1ms"
 
   tableorder-admin:
     build:
