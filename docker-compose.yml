@@ -33,8 +33,6 @@ services:
   tableorder-customer:
     build:
       context: ./customer-frontend
-    ports:
-      - "3000:80"
     networks:
       - proxy
     restart: unless-stopped
