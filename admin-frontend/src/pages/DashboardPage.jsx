@@ -134,6 +134,10 @@ export default function DashboardPage() {
         onClose={() => setSelectedOrder(null)}
         onStatusChange={handleStatusChange}
         onDelete={handleDelete}
+        onOrderUpdate={(updatedOrder) => {
+          setOrders(prev => prev.map(o => o.id === updatedOrder.id ? updatedOrder : o))
+          setSelectedOrder(updatedOrder)
+        }}
       />
       {historyTable && (
         <TableOrdersModal

@@ -146,6 +146,52 @@ async def update_order_status(db: AsyncSession, store_id: str, order_id: str, da
     return order
 
 
+async def delete_order_item(db: AsyncSession, store_id: str, order_id: str, item_id: str):
+    from app.models.table import Table
+    result = await db.execute(
+        select(Order).options(selectinload(Order.items)).where(Order.id == order_id)
+    )
+    order = result.scalar_one_or_none()
+    if not order:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="주문을 찾을 수 없습니다")
+
+    result = await db.execute(select(Table).where(Table.id == order.table_id, Table.store_id == store_id))
+    if not result.scalar_one_or_none():
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="권한이 없습니다")
+
+    item = next((i for i in order.items if i.id == item_id), None)
+    if not item:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="아이템을 찾을 수 없습니다")
+
+    item_total = item.unit_price * item.quantity
+    order.total_amount = max(0, order.total_amount - item_total)
+
+    # 세션 총액도 차감
+    result = await db.execute(select(TableSession).where(TableSession.id == order.session_id))
+    session = result.scalar_one_or_none()
+    if session:
+        session.total_amount = max(0, session.total_amount - item_total)
+
+    await db.delete(item)
+
+    # 아이템이 모두 삭제되면 주문도 삭제
+    remaining = [i for i in order.items if i.id != item_id]
+    if not remaining:
+        await db.delete(order)
+        await db.commit()
+        await sse_service.broadcast_to_admin(store_id, "order_deleted", {
+            "order_id": order_id, "table_id": order.table_id
+        })
+        return {"order_deleted": True}
+
+    await db.commit()
+
+    result = await db.execute(
+        select(Order).options(selectinload(Order.items)).where(Order.id == order_id)
+    )
+    return result.scalar_one()
+
+
 async def delete_order(db: AsyncSession, store_id: str, order_id: str):
     from app.models.table import Table
     result = await db.execute(select(Order).where(Order.id == order_id))

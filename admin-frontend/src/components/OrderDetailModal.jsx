@@ -6,10 +6,11 @@ import ConfirmDialog from './ConfirmDialog'
 const NEXT_STATUS = { pending: 'preparing', preparing: 'completed' }
 const STATUS_LABEL = { pending: '대기중 → 준비중', preparing: '준비중 → 완료' }
 
-export default function OrderDetailModal({ order, onClose, onStatusChange, onDelete }) {
+export default function OrderDetailModal({ order, onClose, onStatusChange, onDelete, onOrderUpdate }) {
   const { token } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deletingItemId, setDeletingItemId] = useState(null)
   const [error, setError] = useState(null)
 
   if (!order) return null
@@ -42,6 +43,24 @@ export default function OrderDetailModal({ order, onClose, onStatusChange, onDel
     }
   }
 
+  const handleDeleteItem = async (itemId) => {
+    setDeletingItemId(itemId)
+    try {
+      const result = await api.delete(`/orders/${order.id}/items/${itemId}`, token)
+      if (result?.order_deleted) {
+        onDelete(order.id)
+        onClose()
+      } else {
+        // 주문 업데이트 (아이템 제거 후 남은 주문)
+        if (onOrderUpdate) onOrderUpdate(result)
+      }
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setDeletingItemId(null)
+    }
+  }
+
   return (
     <>
       <div style={styles.overlay} onClick={onClose} />
@@ -62,6 +81,14 @@ export default function OrderDetailModal({ order, onClose, onStatusChange, onDel
               <span style={styles.itemName}>{item.menu_name}</span>
               <span style={styles.itemQty}>x{item.quantity}</span>
               <span style={styles.itemPrice}>{(item.unit_price * item.quantity).toLocaleString()}원</span>
+              <button
+                style={styles.itemDeleteBtn}
+                onClick={() => handleDeleteItem(item.id)}
+                disabled={deletingItemId === item.id}
+                title="이 항목 삭제"
+              >
+                {deletingItemId === item.id ? '...' : '✕'}
+              </button>
             </div>
           ))}
         </div>
@@ -115,6 +142,7 @@ const styles = {
   itemName: { flex: 1, fontSize: 14 },
   itemQty: { color: '#666', fontSize: 13 },
   itemPrice: { fontWeight: 600, minWidth: 70, textAlign: 'right', fontSize: 14 },
+  itemDeleteBtn: { background: 'none', border: 'none', color: '#ccc', cursor: 'pointer', fontSize: 14, padding: '0 4px', marginLeft: 4 },
   totalRow: { display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderTop: '2px solid #eee', fontWeight: 700 },
   totalAmount: { color: '#e53e3e', fontSize: 17 },
   error: { padding: 10, background: '#fff5f5', color: '#e53e3e', borderRadius: 8, fontSize: 13, marginBottom: 12 },

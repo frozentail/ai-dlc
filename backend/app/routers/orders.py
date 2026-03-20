@@ -64,3 +64,13 @@ async def delete_order(
 ):
     await order_service.delete_order(db, admin["store_id"], order_id)
     return {"success": True}
+
+
+@router.delete("/{order_id}/items/{item_id}")
+async def delete_order_item(
+    order_id: str,
+    item_id: str,
+    db: AsyncSession = Depends(get_db),
+    admin: dict = Depends(get_current_admin),
+):
+    return await order_service.delete_order_item(db, admin["store_id"], order_id, item_id)

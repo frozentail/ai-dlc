@@ -40,7 +40,8 @@ export default function TableManagementPage() {
       setOrders(prev => prev.filter(o => o.table_id !== completeTarget.id))
       setCompleteTarget(null)
     } catch (e) {
-      console.error(e)
+      alert(e.message)
+      setCompleteTarget(null)
     }
   }
 
