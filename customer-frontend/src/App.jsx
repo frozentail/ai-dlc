@@ -14,12 +14,9 @@ function PrivateRoute({ children }) {
 }
 
 function AppRoutes() {
-  const { auth, isLoading, error } = useAuth()
+  const { isLoading } = useAuth()
 
   if (isLoading) return <div style={{ padding: 40, textAlign: 'center' }}>로딩 중...</div>
-
-  // 자동 로그인 실패 시 에러 표시 후 setup으로
-  if (error && !auth) return <Navigate to="/setup" replace />
 
   return (
     <Routes>
