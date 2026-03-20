@@ -1,5 +1,5 @@
 services:
-  postgres:
+  tableorder-postgres:
     image: postgres:16-alpine
     environment:
       POSTGRES_DB: tableorder
@@ -15,22 +15,22 @@ services:
       timeout: 5s
       retries: 5
 
-  backend:
+  tableorder-backend:
     build: ./backend
     environment:
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/tableorder
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@tableorder-postgres:5432/tableorder
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRE_HOURS: 16
       CORS_ORIGINS: https://eveningsip.frozentea.org
     volumes:
       - backend_uploads:/app/static/uploads
     depends_on:
-      postgres:
+      tableorder-postgres:
         condition: service_healthy
     networks:
       - proxy
 
-  customer-frontend:
+  tableorder-customer:
     build:
       context: ./customer-frontend
     ports:
@@ -46,7 +46,7 @@ services:
       - "traefik.http.routers.tableorder-customer.entrypoints=websecure"
       - "traefik.http.routers.tableorder-customer.tls.certresolver=cloudflare"
 
-  admin-frontend:
+  tableorder-admin:
     build:
       context: ./admin-frontend
     networks:
