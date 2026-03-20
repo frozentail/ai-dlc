@@ -1,7 +1,6 @@
 import asyncio
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 from fastapi.responses import StreamingResponse
-from app.dependencies import get_current_admin, get_current_table
 from app.services.auth_service import decode_token
 from app.services.sse_service import sse_service
 
