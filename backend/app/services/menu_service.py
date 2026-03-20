@@ -26,6 +26,17 @@ async def create_category(db: AsyncSession, store_id: str, name: str) -> Categor
     return category
 
 
+async def delete_category(db: AsyncSession, store_id: str, category_id: str):
+    result = await db.execute(
+        select(Category).where(Category.id == category_id, Category.store_id == store_id)
+    )
+    category = result.scalar_one_or_none()
+    if not category:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="카테고리를 찾을 수 없습니다")
+    await db.delete(category)
+    await db.commit()
+
+
 async def get_categories(db: AsyncSession, store_id: str) -> list[Category]:
     result = await db.execute(
         select(Category).where(Category.store_id == store_id).order_by(Category.sort_order)

@@ -22,6 +22,16 @@ async def create_category(
     return await menu_service.create_category(db, admin["store_id"], data.name)
 
 
+@router.delete("/categories/{category_id}")
+async def delete_category(
+    category_id: str,
+    db: AsyncSession = Depends(get_db),
+    admin: dict = Depends(get_current_admin),
+):
+    await menu_service.delete_category(db, admin["store_id"], category_id)
+    return {"success": True}
+
+
 @router.get("/menus", response_model=list[MenuResponse])
 async def get_menus(
     category_id: str | None = None,

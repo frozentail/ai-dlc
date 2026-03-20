@@ -36,6 +36,18 @@ export default function MenuManagementPage() {
     }
   }
 
+  const handleDeleteCategory = async (cat) => {
+    if (!window.confirm(`"${cat.name}" 카테고리를 삭제하시겠습니까? 해당 카테고리의 메뉴도 모두 삭제됩니다.`)) return
+    try {
+      await api.delete(`/categories/${cat.id}`, token)
+      setCategories(prev => prev.filter(c => c.id !== cat.id))
+      setMenus(prev => prev.filter(m => m.category_id !== cat.id))
+      if (activeCategory === cat.id) setActiveCategory(categories.find(c => c.id !== cat.id)?.id || null)
+    } catch (e) {
+      alert(e.message)
+    }
+  }
+
   useEffect(() => {
     const load = async () => {
       try {
@@ -110,13 +122,15 @@ export default function MenuManagementPage() {
         {/* 카테고리 탭 */}
         <div style={styles.tabs}>
           {categories.map(cat => (
-            <button
-              key={cat.id}
-              style={{ ...styles.tab, ...(activeCategory === cat.id ? styles.tabActive : {}) }}
-              onClick={() => setActiveCategory(cat.id)}
-            >
-              {cat.name}
-            </button>
+            <div key={cat.id} style={styles.tabWrapper}>
+              <button
+                style={{ ...styles.tab, ...(activeCategory === cat.id ? styles.tabActive : {}) }}
+                onClick={() => setActiveCategory(cat.id)}
+              >
+                {cat.name}
+              </button>
+              <button style={styles.tabDeleteBtn} onClick={() => handleDeleteCategory(cat)}>✕</button>
+            </div>
           ))}
           <button style={styles.addCatBtn} onClick={() => setShowCatInput(v => !v)}>+ 카테고리</button>
         </div>
@@ -209,6 +223,8 @@ const styles = {
   deleteBtn: { height: 36, padding: '0 12px', border: '1px solid #e53e3e', color: '#e53e3e', background: '#fff', borderRadius: 6, cursor: 'pointer', fontSize: 13 },
   empty: { padding: 40, textAlign: 'center', color: '#999' },
   addCatBtn: { height: 36, padding: '0 14px', border: '1px dashed #3b82f6', background: '#fff', color: '#3b82f6', borderRadius: 18, cursor: 'pointer', fontSize: 13 },
+  tabWrapper: { display: 'flex', alignItems: 'center', gap: 2 },
+  tabDeleteBtn: { width: 20, height: 20, border: 'none', background: 'none', color: '#999', cursor: 'pointer', fontSize: 12, padding: 0, lineHeight: 1 },
   catForm: { display: 'flex', gap: 8, alignItems: 'center', marginBottom: 16, flexWrap: 'wrap' },
   catInput: { height: 36, padding: '0 12px', border: '1px solid #ddd', borderRadius: 8, fontSize: 14, outline: 'none' },
   catSaveBtn: { height: 36, padding: '0 14px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600 },
