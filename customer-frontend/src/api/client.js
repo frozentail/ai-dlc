@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_URL || ''
+const BASE_URL = import.meta.env.VITE_API_URL || '/api'
 
 const request = async (path, options = {}, token = null) => {
   const headers = { 'Content-Type': 'application/json', ...options.headers }
