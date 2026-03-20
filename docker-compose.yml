@@ -8,7 +8,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - table-order-network
+      - proxy
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 5s
@@ -28,7 +28,7 @@ services:
       postgres:
         condition: service_healthy
     networks:
-      - table-order-network
+      - proxy
 
   customer-frontend:
     build:
@@ -36,7 +36,6 @@ services:
     ports:
       - "3000:80"
     networks:
-      - table-order-network
       - proxy
     restart: unless-stopped
     labels:
@@ -51,7 +50,7 @@ services:
     build:
       context: ./admin-frontend
     networks:
-      - table-order-network
+      - proxy
     restart: unless-stopped
 
 volumes:
@@ -59,7 +58,5 @@ volumes:
   backend_uploads:
 
 networks:
-  table-order-network:
-    driver: bridge
   proxy:
     external: true
