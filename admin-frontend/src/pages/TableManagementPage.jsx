@@ -12,6 +12,9 @@ export default function TableManagementPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [completeTarget, setCompleteTarget] = useState(null)
   const [historyTarget, setHistoryTarget] = useState(null)
+  const [newTable, setNewTable] = useState({ table_number: '', password: '' })
+  const [addError, setAddError] = useState(null)
+  const [isAdding, setIsAdding] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -41,6 +44,26 @@ export default function TableManagementPage() {
     }
   }
 
+  const handleAddTable = async (e) => {
+    e.preventDefault()
+    if (!newTable.table_number) return setAddError('테이블 번호를 입력해주세요')
+    if (!newTable.password) return setAddError('비밀번호를 입력해주세요')
+    setIsAdding(true)
+    setAddError(null)
+    try {
+      const created = await api.post('/tables/setup', {
+        table_number: parseInt(newTable.table_number),
+        password: newTable.password,
+      }, token)
+      setTables(prev => [...prev, created])
+      setNewTable({ table_number: '', password: '' })
+    } catch (e) {
+      setAddError(e.message)
+    } finally {
+      setIsAdding(false)
+    }
+  }
+
   const ordersByTable = orders.reduce((acc, o) => {
     if (!acc[o.table_id]) acc[o.table_id] = []
     acc[o.table_id].push(o)
@@ -52,6 +75,27 @@ export default function TableManagementPage() {
       <NavBar />
       <div style={styles.content}>
         <h2 style={styles.heading}>테이블 관리</h2>
+        <form onSubmit={handleAddTable} style={styles.addForm}>
+          <input
+            style={styles.input}
+            type="number"
+            min="1"
+            placeholder="테이블 번호"
+            value={newTable.table_number}
+            onChange={e => setNewTable({ ...newTable, table_number: e.target.value })}
+          />
+          <input
+            style={styles.input}
+            type="password"
+            placeholder="비밀번호"
+            value={newTable.password}
+            onChange={e => setNewTable({ ...newTable, password: e.target.value })}
+          />
+          <button style={styles.addBtn} type="submit" disabled={isAdding}>
+            {isAdding ? '추가 중...' : '테이블 추가'}
+          </button>
+          {addError && <span style={styles.error}>{addError}</span>}
+        </form>
         {isLoading ? (
           <div style={styles.loading}>불러오는 중...</div>
         ) : (
@@ -120,4 +164,8 @@ const styles = {
   actions: { display: 'flex', gap: 8 },
   historyBtn: { height: 40, padding: '0 14px', border: '1px solid #ddd', background: '#fff', borderRadius: 8, cursor: 'pointer', fontSize: 13 },
   completeBtn: { height: 40, padding: '0 14px', background: '#1a1a2e', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600 },
+  addForm: { display: 'flex', gap: 8, alignItems: 'center', marginBottom: 20, flexWrap: 'wrap' },
+  input: { height: 40, padding: '0 12px', border: '1px solid #ddd', borderRadius: 8, fontSize: 14, outline: 'none', width: 140 },
+  addBtn: { height: 40, padding: '0 16px', background: '#e53e3e', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 14 },
+  error: { color: '#e53e3e', fontSize: 13 },
 }
