@@ -5,7 +5,7 @@ import NavBar from '../components/NavBar'
 import MenuForm from '../components/MenuForm'
 import ConfirmDialog from '../components/ConfirmDialog'
 
-const API_URL = import.meta.env.VITE_API_URL || ''
+const API_URL = import.meta.env.VITE_API_URL || '/admin/api'
 
 export default function MenuManagementPage() {
   const { token } = useAuth()
@@ -16,7 +16,25 @@ export default function MenuManagementPage() {
   const [editingMenu, setEditingMenu] = useState(null)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [showCatInput, setShowCatInput] = useState(false)
+  const [newCatName, setNewCatName] = useState('')
+  const [catError, setCatError] = useState(null)
   const draggingId = useRef(null)
+
+  const handleAddCategory = async (e) => {
+    e.preventDefault()
+    if (!newCatName.trim()) return setCatError('카테고리명을 입력해주세요')
+    setCatError(null)
+    try {
+      const created = await api.post('/categories', { name: newCatName.trim() }, token)
+      setCategories(prev => [...prev, created])
+      if (!activeCategory) setActiveCategory(created.id)
+      setNewCatName('')
+      setShowCatInput(false)
+    } catch (e) {
+      setCatError(e.message)
+    }
+  }
 
   useEffect(() => {
     const load = async () => {
@@ -54,7 +72,7 @@ export default function MenuManagementPage() {
     setMenus(reordered)
 
     try {
-      await api.put('/menus/reorder', { menu_ids: reordered.map(m => m.id) }, token)
+      await api.put('/menus/reorder', { items: reordered.map((m, i) => ({ id: m.id, sort_order: i })) }, token)
     } catch (e) {
       console.error(e)
     }
@@ -100,7 +118,22 @@ export default function MenuManagementPage() {
               {cat.name}
             </button>
           ))}
+          <button style={styles.addCatBtn} onClick={() => setShowCatInput(v => !v)}>+ 카테고리</button>
         </div>
+        {showCatInput && (
+          <form onSubmit={handleAddCategory} style={styles.catForm}>
+            <input
+              style={styles.catInput}
+              placeholder="카테고리명"
+              value={newCatName}
+              onChange={e => setNewCatName(e.target.value)}
+              autoFocus
+            />
+            <button style={styles.catSaveBtn} type="submit">추가</button>
+            <button style={styles.catCancelBtn} type="button" onClick={() => { setShowCatInput(false); setNewCatName(''); setCatError(null) }}>취소</button>
+            {catError && <span style={styles.catError}>{catError}</span>}
+          </form>
+        )}
 
         {isLoading ? (
           <div style={styles.loading}>불러오는 중...</div>
@@ -175,4 +208,10 @@ const styles = {
   editBtn: { height: 36, padding: '0 12px', border: '1px solid #3b82f6', color: '#3b82f6', background: '#fff', borderRadius: 6, cursor: 'pointer', fontSize: 13 },
   deleteBtn: { height: 36, padding: '0 12px', border: '1px solid #e53e3e', color: '#e53e3e', background: '#fff', borderRadius: 6, cursor: 'pointer', fontSize: 13 },
   empty: { padding: 40, textAlign: 'center', color: '#999' },
+  addCatBtn: { height: 36, padding: '0 14px', border: '1px dashed #3b82f6', background: '#fff', color: '#3b82f6', borderRadius: 18, cursor: 'pointer', fontSize: 13 },
+  catForm: { display: 'flex', gap: 8, alignItems: 'center', marginBottom: 16, flexWrap: 'wrap' },
+  catInput: { height: 36, padding: '0 12px', border: '1px solid #ddd', borderRadius: 8, fontSize: 14, outline: 'none' },
+  catSaveBtn: { height: 36, padding: '0 14px', background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600 },
+  catCancelBtn: { height: 36, padding: '0 14px', border: '1px solid #ddd', background: '#fff', borderRadius: 8, cursor: 'pointer', fontSize: 13 },
+  catError: { color: '#e53e3e', fontSize: 13 },
 }

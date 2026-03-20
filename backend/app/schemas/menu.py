@@ -2,6 +2,10 @@ from pydantic import BaseModel, field_validator
 from typing import Optional
 
 
+class CategoryCreate(BaseModel):
+    name: str
+
+
 class CategoryResponse(BaseModel):
     id: str
     name: str

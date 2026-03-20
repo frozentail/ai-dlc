@@ -13,6 +13,19 @@ MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 UPLOAD_DIR = "static/uploads"
 
 
+async def create_category(db: AsyncSession, store_id: str, name: str) -> Category:
+    result = await db.execute(
+        select(Category).where(Category.store_id == store_id).order_by(Category.sort_order.desc())
+    )
+    last = result.scalars().first()
+    next_order = (last.sort_order + 1) if last else 0
+    category = Category(id=generate_uuid(), store_id=store_id, name=name, sort_order=next_order)
+    db.add(category)
+    await db.commit()
+    await db.refresh(category)
+    return category
+
+
 async def get_categories(db: AsyncSession, store_id: str) -> list[Category]:
     result = await db.execute(
         select(Category).where(Category.store_id == store_id).order_by(Category.sort_order)

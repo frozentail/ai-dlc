@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.dependencies import get_current_admin
-from app.schemas.menu import MenuCreate, MenuUpdate, MenuResponse, CategoryResponse, MenuReorderRequest
+from app.schemas.menu import MenuCreate, MenuUpdate, MenuResponse, CategoryCreate, CategoryResponse, MenuReorderRequest
 from app.services import menu_service
 
 router = APIRouter(tags=["menus"])
@@ -11,6 +11,15 @@ router = APIRouter(tags=["menus"])
 @router.get("/categories", response_model=list[CategoryResponse])
 async def get_categories(db: AsyncSession = Depends(get_db), admin: dict = Depends(get_current_admin)):
     return await menu_service.get_categories(db, admin["store_id"])
+
+
+@router.post("/categories", response_model=CategoryResponse)
+async def create_category(
+    data: CategoryCreate,
+    db: AsyncSession = Depends(get_db),
+    admin: dict = Depends(get_current_admin),
+):
+    return await menu_service.create_category(db, admin["store_id"], data.name)
 
 
 @router.get("/menus", response_model=list[MenuResponse])

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { api, uploadImage } from '../api/client'
 
-const API_URL = import.meta.env.VITE_API_URL || ''
+const API_URL = import.meta.env.VITE_API_URL || '/admin/api'
 
 export default function MenuForm({ menu, categories, onSave, onClose }) {
   const { token } = useAuth()
