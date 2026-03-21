@@ -44,6 +44,7 @@ export default function MenuPage() {
     <div style={styles.container}>
       {/* 헤더 */}
       <div style={styles.header}>
+        <img src="/logo.png" alt="로고" style={styles.logo} onError={e => { e.target.style.display='none' }} />
         <span style={styles.tableInfo}>테이블 {auth.tableNumber}번</span>
         <button style={styles.historyBtn} onClick={() => navigate('/orders')}>주문내역</button>
       </div>
@@ -86,7 +87,8 @@ export default function MenuPage() {
 
 const styles = {
   container: { maxWidth: 480, margin: '0 auto', minHeight: '100vh', background: '#fff', paddingBottom: 80 },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #eee', position: 'sticky', top: 0, background: '#fff', zIndex: 10 },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px', borderBottom: '1px solid #eee', position: 'sticky', top: 0, background: '#fff', zIndex: 10 },
+  logo: { height: 36, width: 'auto', objectFit: 'contain' },
   tableInfo: { fontWeight: 700, fontSize: 16 },
   historyBtn: { minHeight: 44, padding: '0 16px', border: '1px solid #ddd', background: '#fff', borderRadius: 8, cursor: 'pointer', fontSize: 14 },
   tabs: { display: 'flex', gap: 8, padding: '12px 20px', overflowX: 'auto', borderBottom: '1px solid #eee' },
