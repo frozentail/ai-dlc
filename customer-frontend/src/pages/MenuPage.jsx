@@ -44,7 +44,7 @@ export default function MenuPage() {
     <div style={styles.container}>
       {/* 헤더 */}
       <div style={styles.header}>
-        <img src="/logo.png" alt="로고" style={styles.logo} onError={e => { e.target.style.display='none' }} />
+        <img src="/logo.jpeg" alt="로고" style={styles.logo} onError={e => { e.target.style.display='none' }} />
         <span style={styles.tableInfo}>테이블 {auth.tableNumber}번</span>
         <button style={styles.historyBtn} onClick={() => navigate('/orders')}>주문내역</button>
       </div>

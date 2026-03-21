@@ -13,7 +13,7 @@ export default function NavBar() {
   return (
     <nav style={styles.nav}>
       <span style={styles.brand}>
-        <img src="/logo.png" alt="로고" style={styles.logo} onError={e => { e.target.style.display='none' }} />
+        <img src="/logo.jpeg" alt="로고" style={styles.logo} onError={e => { e.target.style.display='none' }} />
         🍽️ 관리자
       </span>
       <div style={styles.links}>
