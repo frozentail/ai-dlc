@@ -2,7 +2,7 @@ export default function ConfirmDialog({ message, onConfirm, onCancel }) {
   return (
     <>
       <div style={styles.overlay} onClick={onCancel} />
-      <div style={styles.dialog}>
+      <div style={styles.dialog} onClick={e => e.stopPropagation()}>
         <p style={styles.message}>{message}</p>
         <div style={styles.buttons}>
           <button style={styles.cancelBtn} onClick={onCancel}>취소</button>
