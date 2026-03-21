@@ -17,6 +17,28 @@ export default function DashboardPage() {
   const { lastEvent, isConnected } = useSSE(token)
   const highlightTimers = useRef({})
 
+  const playNotificationSound = () => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)()
+      const playTone = (freq, startTime, duration) => {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+        osc.frequency.value = freq
+        osc.type = 'sine'
+        gain.gain.setValueAtTime(0.4, startTime)
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration)
+        osc.start(startTime)
+        osc.stop(startTime + duration)
+      }
+      playTone(880, ctx.currentTime, 0.15)
+      playTone(1100, ctx.currentTime + 0.18, 0.2)
+    } catch (e) {
+      console.warn('알림음 재생 실패:', e)
+    }
+  }
+
   useEffect(() => {
     const load = async () => {
       try {
@@ -42,12 +64,13 @@ export default function DashboardPage() {
       api.get(`/orders/${order_id}`, token)
         .then(order => {
           setOrders(prev => prev.find(o => o.id === order.id) ? prev : [order, ...prev])
+          playNotificationSound()
           const tid = table_id
           setNewTableIds(prev => new Set([...prev, tid]))
           if (highlightTimers.current[tid]) clearTimeout(highlightTimers.current[tid])
           highlightTimers.current[tid] = setTimeout(() => {
             setNewTableIds(prev => { const s = new Set(prev); s.delete(tid); return s })
-          }, 3000)
+          }, 30000)
         })
         .catch(console.error)
     }
