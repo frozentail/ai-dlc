@@ -1,6 +1,7 @@
 services:
   tableorder-postgres:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: tableorder
       POSTGRES_USER: ${POSTGRES_USER}
@@ -17,6 +18,7 @@ services:
 
   tableorder-backend:
     build: ./backend
+    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@tableorder-postgres:5432/tableorder
       JWT_SECRET: ${JWT_SECRET}
