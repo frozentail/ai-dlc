@@ -147,4 +147,4 @@ async def upload_image(file: UploadFile) -> str:
     async with aiofiles.open(filepath, "wb") as f:
         await f.write(content)
 
-    return f"/static/uploads/{filename}"
+    return filename
