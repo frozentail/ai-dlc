@@ -31,7 +31,7 @@ class OrderItem(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
     order_id: Mapped[str] = mapped_column(String(36), ForeignKey("orders.id"), nullable=False)
-    menu_id: Mapped[str] = mapped_column(String(36), ForeignKey("menus.id"), nullable=False)
+    menu_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("menus.id", ondelete="SET NULL"), nullable=True)
     menu_name: Mapped[str] = mapped_column(String(100), nullable=False)
     unit_price: Mapped[int] = mapped_column(Integer, nullable=False)
     quantity: Mapped[int] = mapped_column(Integer, nullable=False)
