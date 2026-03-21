@@ -15,8 +15,8 @@ class Order(Base):
     __tablename__ = "orders"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
-    table_id: Mapped[str] = mapped_column(String(36), ForeignKey("tables.id"), nullable=False)
-    session_id: Mapped[str] = mapped_column(String(36), ForeignKey("table_sessions.id"), nullable=False)
+    table_id: Mapped[str] = mapped_column(String(36), ForeignKey("tables.id", ondelete="CASCADE"), nullable=False)
+    session_id: Mapped[str] = mapped_column(String(36), ForeignKey("table_sessions.id", ondelete="CASCADE"), nullable=False)
     status: Mapped[OrderStatus] = mapped_column(SAEnum(OrderStatus), default=OrderStatus.PENDING)
     total_amount: Mapped[int] = mapped_column(Integer, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
