@@ -65,6 +65,15 @@ async def complete_session(db: AsyncSession, store_id: str, table_id: str):
     return {"success": True}
 
 
+async def delete_table(db: AsyncSession, store_id: str, table_id: str):
+    result = await db.execute(select(Table).where(Table.id == table_id, Table.store_id == store_id))
+    table = result.scalar_one_or_none()
+    if not table:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="테이블을 찾을 수 없습니다")
+    await db.delete(table)
+    await db.commit()
+
+
 async def get_table_history(
     db: AsyncSession,
     store_id: str,

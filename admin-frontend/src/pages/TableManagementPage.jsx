@@ -11,6 +11,7 @@ export default function TableManagementPage() {
   const [orders, setOrders] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [completeTarget, setCompleteTarget] = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
   const [historyTarget, setHistoryTarget] = useState(null)
   const [newTable, setNewTable] = useState({ table_number: '', password: '' })
   const [addError, setAddError] = useState(null)
@@ -33,6 +34,18 @@ export default function TableManagementPage() {
     }
     load()
   }, [token])
+
+  const handleDelete = async () => {
+    try {
+      await api.delete(`/tables/${deleteTarget.id}`, token)
+      setTables(prev => prev.filter(t => t.id !== deleteTarget.id))
+      setOrders(prev => prev.filter(o => o.table_id !== deleteTarget.id))
+      setDeleteTarget(null)
+    } catch (e) {
+      alert(e.message)
+      setDeleteTarget(null)
+    }
+  }
 
   const handleComplete = async () => {
     try {
@@ -112,18 +125,9 @@ export default function TableManagementPage() {
                     <span style={styles.totalAmount}>{total.toLocaleString()}원</span>
                   </div>
                   <div style={styles.actions}>
-                    <button
-                      style={styles.historyBtn}
-                      onClick={() => setHistoryTarget(table)}
-                    >
-                      과거 내역
-                    </button>
-                    <button
-                      style={styles.completeBtn}
-                      onClick={() => setCompleteTarget(table)}
-                    >
-                      이용 완료
-                    </button>
+                    <button style={styles.historyBtn} onClick={() => setHistoryTarget(table)}>과거 내역</button>
+                    <button style={styles.completeBtn} onClick={() => setCompleteTarget(table)}>이용 완료</button>
+                    <button style={styles.deleteBtn} onClick={() => setDeleteTarget(table)}>삭제</button>
                   </div>
                 </div>
               )
@@ -131,6 +135,14 @@ export default function TableManagementPage() {
           </div>
         )}
       </div>
+
+      {deleteTarget && (
+        <ConfirmDialog
+          message={`${deleteTarget.table_number}번 테이블을 삭제하시겠습니까? 관련 주문 내역도 모두 삭제됩니다.`}
+          onConfirm={handleDelete}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      )}
 
       {completeTarget && (
         <ConfirmDialog
@@ -167,6 +179,6 @@ const styles = {
   completeBtn: { height: 40, padding: '0 14px', background: '#1a1a2e', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600 },
   addForm: { display: 'flex', gap: 8, alignItems: 'center', marginBottom: 20, flexWrap: 'wrap' },
   input: { height: 40, padding: '0 12px', border: '1px solid #ddd', borderRadius: 8, fontSize: 14, outline: 'none', width: 140 },
+  deleteBtn: { height: 40, padding: '0 14px', border: '1px solid #e53e3e', color: '#e53e3e', background: '#fff', borderRadius: 8, cursor: 'pointer', fontSize: 13 },
   addBtn: { height: 40, padding: '0 16px', background: '#e53e3e', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 14 },
-  error: { color: '#e53e3e', fontSize: 13 },
 }

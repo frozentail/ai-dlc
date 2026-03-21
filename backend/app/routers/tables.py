@@ -34,6 +34,16 @@ async def complete_session(
     return await table_service.complete_session(db, admin["store_id"], table_id)
 
 
+@router.delete("/{table_id}")
+async def delete_table(
+    table_id: str,
+    db: AsyncSession = Depends(get_db),
+    admin: dict = Depends(get_current_admin),
+):
+    await table_service.delete_table(db, admin["store_id"], table_id)
+    return {"success": True}
+
+
 @router.get("/{table_id}/history")
 async def get_table_history(
     table_id: str,
