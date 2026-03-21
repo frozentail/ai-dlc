@@ -106,7 +106,8 @@ export default function MenuManagementPage() {
       setMenus(prev => prev.filter(m => m.id !== deleteTarget.id))
       setDeleteTarget(null)
     } catch (e) {
-      console.error(e)
+      alert(e.message || '메뉴 삭제에 실패했습니다')
+      setDeleteTarget(null)
     }
   }
 

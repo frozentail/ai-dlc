@@ -56,6 +56,25 @@ async def get_public_categories(store_id: str, db: AsyncSession = Depends(get_db
     return await menu_service.get_categories(db, store_id)
 
 
+@router.put("/menus/reorder")
+async def reorder_menus(
+    data: MenuReorderRequest,
+    db: AsyncSession = Depends(get_db),
+    admin: dict = Depends(get_current_admin),
+):
+    await menu_service.reorder_menus(db, admin["store_id"], data)
+    return {"success": True}
+
+
+@router.post("/menus/upload-image")
+async def upload_image(
+    file: UploadFile = File(...),
+    admin: dict = Depends(get_current_admin),
+):
+    image_path = await menu_service.upload_image(file)
+    return {"image_path": image_path}
+
+
 @router.post("/menus", response_model=MenuResponse)
 async def create_menu(
     data: MenuCreate,
@@ -83,22 +102,3 @@ async def delete_menu(
 ):
     await menu_service.delete_menu(db, admin["store_id"], menu_id)
     return {"success": True}
-
-
-@router.put("/menus/reorder")
-async def reorder_menus(
-    data: MenuReorderRequest,
-    db: AsyncSession = Depends(get_db),
-    admin: dict = Depends(get_current_admin),
-):
-    await menu_service.reorder_menus(db, admin["store_id"], data)
-    return {"success": True}
-
-
-@router.post("/menus/upload-image")
-async def upload_image(
-    file: UploadFile = File(...),
-    admin: dict = Depends(get_current_admin),
-):
-    image_path = await menu_service.upload_image(file)
-    return {"image_path": image_path}
