@@ -1,15 +1,21 @@
+import { createPortal } from 'react-dom'
+
 export default function ConfirmDialog({ message, onConfirm, onCancel }) {
-  return (
+  return createPortal(
     <>
       <div style={styles.overlay} onClick={onCancel} />
       <div style={styles.dialog} onClick={e => e.stopPropagation()}>
         <p style={styles.message}>{message}</p>
         <div style={styles.buttons}>
           <button style={styles.cancelBtn} onClick={onCancel}>취소</button>
-          <button style={styles.confirmBtn} onClick={onConfirm}>확인</button>
+          <button
+            style={styles.confirmBtn}
+            onClick={e => { e.stopPropagation(); onConfirm(); }}
+          >확인</button>
         </div>
       </div>
-    </>
+    </>,
+    document.body
   )
 }
 

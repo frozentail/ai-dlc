@@ -173,7 +173,7 @@ export default function MenuManagementPage() {
                 </div>
                 <div style={styles.menuActions}>
                   <button style={styles.editBtn} onClick={() => { setEditingMenu(menu); setShowForm(true) }}>수정</button>
-                  <button style={styles.deleteBtn} onClick={() => setDeleteTarget(menu)}>삭제</button>
+                  <button style={styles.deleteBtn} onClick={e => { e.stopPropagation(); setDeleteTarget(menu) }}>삭제</button>
                 </div>
               </div>
             ))}
